@@ -1,4 +1,7 @@
-
+const { default: connectDB } = require('@/db/connectDB');
+const Answer = require('../models/Answer');
+const Question = require('../models/Question');
+const User = require('../models/User');
 //Questions functionality
 
 
@@ -19,6 +22,7 @@ exports.createQuestion = async (req, res) => {
 };
 
 exports.getAllQuestions = async (req, res) => {
+    connectDB(); // Ensure database connection is established
     try {
         const questions = await Question.find()
             .populate('author', 'username')
@@ -83,13 +87,12 @@ exports.getQuestionsByTags = async (req, res) => {
 
 
 
+
 // answers functionality
 
 
 
-const Answer = require('../models/Answer');
-const Question = require('../models/Question');
-const User = require('../models/User');
+
 
 exports.createAnswer = async (req, res) => {
     try {
@@ -128,37 +131,39 @@ exports.voteAnswer = async (req, res) => {
     try {
         const { type } = req.body; // 'upvote' or 'downvote'
         const answer = await Answer.findById(req.params.answerId);
-
-        if (!answer) {
-            return res.status(404).json({ message: 'Answer not found' });
-        }
-
         const userId = req.user._id;
-        const userUpvoted = answer.votes.upvotes.includes(userId);
-        const userDownvoted = answer.votes.downvotes.includes(userId);
 
         if (type === 'upvote') {
-            if (userUpvoted) {
-                answer.votes.upvotes.pull(userId);
-            } else {
+            // Remove from downvotes if exists
+            if (answer.votes.downvotes.includes(userId)) {
+                answer.votes.downvotes = answer.votes.downvotes
+                    .filter(id => id.toString() !== userId.toString());
+            }
+            // Add to upvotes if not already upvoted
+            if (!answer.votes.upvotes.includes(userId)) {
                 answer.votes.upvotes.push(userId);
-                if (userDownvoted) {
-                    answer.votes.downvotes.pull(userId);
-                }
             }
         } else if (type === 'downvote') {
-            if (userDownvoted) {
-                answer.votes.downvotes.pull(userId);
-            } else {
+            // Remove from upvotes if exists
+            if (answer.votes.upvotes.includes(userId)) {
+                answer.votes.upvotes = answer.votes.upvotes
+                    .filter(id => id.toString() !== userId.toString());
+            }
+            // Add to downvotes if not already downvoted
+            if (!answer.votes.downvotes.includes(userId)) {
                 answer.votes.downvotes.push(userId);
-                if (userUpvoted) {
-                    answer.votes.upvotes.pull(userId);
-                }
             }
         }
 
         await answer.save();
-        res.json({ success: true, data: answer });
+        
+        res.json({
+            success: true,
+            data: {
+                upvotes: answer.votes.upvotes.length,
+                downvotes: answer.votes.downvotes.length
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
