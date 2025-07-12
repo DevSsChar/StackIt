@@ -13,13 +13,15 @@ const connectDB = async () => {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             connectTimeoutMS: 60000,
+            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
         });
 
         isConnected = true; // Mark as connected
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
-        console.error("Database connection failed:", error.message);
-        throw new Error("Database connection error"); // Do not exit process
+        console.warn("Database connection failed:", error.message);
+        console.warn("Running in offline mode - some features may not work");
+        // Don't throw error, just warn - allow app to continue
     }
 };
 

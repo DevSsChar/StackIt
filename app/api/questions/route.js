@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectDB from "@/db/connectDB";
 import Question from "@/models/Question";
 import Answer from "@/models/Answer";
@@ -9,6 +10,14 @@ import { getServerSession } from "next-auth";
 export async function GET(request) {
   try {
     await connectDB();
+    
+    // If no database connection, return mock data
+    if (!mongoose.connection.readyState) {
+      return NextResponse.json({
+        questions: [],
+        pagination: { page: 1, limit: 10, total: 0, pages: 0 }
+      });
+    }
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -97,6 +106,14 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     await connectDB();
+    
+    // If no database connection, return error
+    if (!mongoose.connection.readyState) {
+      return NextResponse.json(
+        { error: "Database connection not available" },
+        { status: 503 }
+      );
+    }
     
     const session = await getServerSession();
     if (!session) {
