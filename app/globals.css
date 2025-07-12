@@ -5,9 +5,35 @@
   --foreground: #171717;
   --primary: #7c3aed;
   --accent: #38bdf8;
-  --card: #fff;
+  --card: #ffffff;
   --muted: #f6f6f6;
   --border: #e5e7eb;
+}
+
+/* Dark theme */
+:root[data-theme='dark'] {
+  --background: #171717;
+  --foreground: #f9f9f9;
+  --card: #1f1f1f;
+  --muted: #262626;
+  --border: #333333;
+}
+
+/* Utility text/background classes for CSS vars */
+.text-foreground {
+  color: var(--foreground);
+}
+.bg-background {
+  background-color: var(--background);
+}
+.bg-card {
+  background-color: var(--card);
+}
+.bg-muted {
+  background-color: var(--muted);
+}
+.bg-foreground {
+  background-color: var(--foreground);
 }
 
 body {
