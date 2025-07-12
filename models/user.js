@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     notifications: [{
         type: {
             type: String,
-            enum: ['answer', 'comment', 'mention']
+            enum: ['answer', 'comment', 'mention', 'upvote', 'downvote', 'accepted']
         },
         content: String,
         isRead: {
@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema({
         createdAt: {
             type: Date,
             default: Date.now
+        },
+        questionId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Question'
+        },
+        answerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Answer'
         }
     }]
 }, { timestamps: true });
@@ -50,4 +58,5 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+export default User;

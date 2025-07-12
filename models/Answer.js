@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const answerSchema = new mongoose.Schema({
     questionId: {
@@ -54,4 +54,5 @@ answerSchema.virtual('calculatedVoteCount').get(function() {
     return this.votes.reduce((total, vote) => total + vote.value, 0);
 });
 
-module.exports = mongoose.model('Answer', answerSchema);
+const Answer = mongoose.models.Answer || mongoose.model('Answer', answerSchema);
+export default Answer;

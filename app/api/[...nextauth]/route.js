@@ -7,14 +7,19 @@ import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET
-    }),
+    // Only include OAuth providers if environment variables are provided
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET
+      })
+    ] : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET ? [
+      GitHubProvider({
+        clientId: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET
+      })
+    ] : []),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -23,31 +28,46 @@ export const authOptions = {
         isSignUp: { label: "Sign Up", type: "boolean", default: false }
       },
       async authorize(credentials) {
-        await connectDB();
-        
-        const { email, password, isSignUp } = credentials;
-        
-        // Sign up flow
-        if (isSignUp) {
-          const existingUser = await User.findOne({ email });
-          if (existingUser) throw new Error("Email already registered");
+        try {
+          await connectDB();
           
-          const user = await User.create({ 
-            email,
-            password,
-            username: email.split('@')[0]
-          });
-          return user;
+          const { email, password, isSignUp } = credentials;
+          
+          // Sign up flow
+          if (isSignUp) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) throw new Error("Email already registered");
+            
+            const user = await User.create({ 
+              email,
+              password,
+              username: email.split('@')[0]
+            });
+            return {
+              id: user._id.toString(),
+              email: user.email,
+              name: user.username,
+              role: user.role
+            };
+          }
+          
+          // Sign in flow
+          const user = await User.findOne({ email });
+          if (!user) throw new Error("User not found");
+          
+          const isMatch = await user.comparePassword(password);
+          if (!isMatch) throw new Error("Invalid credentials");
+          
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.username,
+            role: user.role
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          throw error;
         }
-        
-        // Sign in flow
-        const user = await User.findOne({ email });
-        if (!user) throw new Error("User not found");
-        
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) throw new Error("Invalid credentials");
-        
-        return user;
       }
     })
   ],
@@ -56,14 +76,37 @@ export const authOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/auth/signin"
+    signIn: "/login"
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user._id;
+        token.id = user.id;
         token.role = user.role;
       }
+      
+      // Handle OAuth providers
+      if (account?.provider === "google" || account?.provider === "github") {
+        try {
+          await connectDB();
+          let dbUser = await User.findOne({ email: user.email });
+          
+          if (!dbUser) {
+            dbUser = await User.create({
+              email: user.email,
+              username: user.name || user.email.split('@')[0],
+              password: 'oauth_user', // placeholder for OAuth users
+              role: 'user'
+            });
+          }
+          
+          token.id = dbUser._id.toString();
+          token.role = dbUser.role;
+        } catch (error) {
+          console.error("OAuth user creation error:", error);
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
