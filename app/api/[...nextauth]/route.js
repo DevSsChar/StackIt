@@ -1,5 +1,5 @@
 import connectDB from "@/db/connectDB";
-import User from "@/models/Users";
+import User from "@/models/User";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";

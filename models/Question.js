@@ -1,4 +1,3 @@
-// filepath: e:\Hackathons\Odoo\backend\stackit-backend\src\models\Question.js
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
@@ -20,15 +19,35 @@ const questionSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    answers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Answer'
+    votes: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        value: {
+            type: Number,
+            enum: [1, -1],
+            required: true
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
     }],
-    acceptedAnswer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Answer',
-        default: null
+    voteCount: {
+        type: Number,
+        default: 0
     }
-}, { timestamps: true });
+}, { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Virtual for calculating vote count
+questionSchema.virtual('calculatedVoteCount').get(function() {
+    return this.votes.reduce((total, vote) => total + vote.value, 0);
+});
 
 module.exports = mongoose.model('Question', questionSchema);

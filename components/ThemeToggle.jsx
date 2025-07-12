@@ -31,7 +31,7 @@ export default function ThemeToggle() {
       whileHover={{ rotate: 20 }}
       whileTap={{ scale: 0.9 }}
       onClick={() => setDark((d) => !d)}
-      className="fixed top-5 right-5 z-50 p-2 rounded-full bg-background/70 backdrop-blur border border-white/20 shadow"
+      className="p-2 rounded-full bg-background/70 backdrop-blur border border-border shadow-md hover:shadow-lg transition-all duration-200"
       aria-label="Toggle dark mode"
     >
       {dark ? "☀️" : "🌙"}
