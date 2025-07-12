@@ -91,11 +91,6 @@ exports.getQuestionsByTags = async (req, res) => {
 // answers functionality
 
 
-
-const Answer = require('../models/Answer');
-const Question = require('../models/Question');
-const User = require('../models/User');
-
 exports.createAnswer = async (req, res) => {
     try {
         const { content } = req.body;
